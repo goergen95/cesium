@@ -13,9 +13,38 @@ You can install the development version of `cesium` from GitHub with:
 remotes::install_github("goergen95/cesium")
 ```
 
+## Usecases
+
 Visit the
 [usecases](https://github.com/goergen95/cesium/tree/main/usecases)
 directory on GitHub to explore applications of the `cesium` package.
+
+### NOAA - Arctic Sea Ice Extent 2000 - 2022
+
+<figure>
+<img src="./usecases/assets/arctic-sea-ice.gif"
+alt="Animation of arctic sea ice extent" />
+<figcaption aria-hidden="true">Animation of arctic sea ice
+extent</figcaption>
+</figure>
+
+### Global Forest Watch - Deforestation in Rondonia, Brazil 2000 - 2020
+
+<figure>
+<img src="./usecases/assets/rondonia-deforestation.gif"
+alt="Animation of forest loss in Rondonia, Brazil" />
+<figcaption aria-hidden="true">Animation of forest loss in Rondonia,
+Brazil</figcaption>
+</figure>
+
+### NASA FIRMS - Fires in Serengeti National Park, Tanzania 2010 - 2020
+
+<figure>
+<img src="./usecases/assets/serengeti-fires.gif"
+alt="Animation of fire detections in the Serengeti National Park, Tanzania" />
+<figcaption aria-hidden="true">Animation of fire detections in the
+Serengeti National Park, Tanzania</figcaption>
+</figure>
 
 ## Disclaimer
 
@@ -93,13 +122,13 @@ data <- data.frame(
     ## Simple feature collection with 4 features and 3 fields
     ## Geometry type: POINT
     ## Dimension:     XY
-    ## Bounding box:  xmin: -169.6478 ymin: -88.97919 xmax: 65.07245 ymax: 37.86887
+    ## Bounding box:  xmin: -120.0236 ymin: -89.10837 xmax: 150.4892 ymax: 40.74365
     ## Geodetic CRS:  WGS 84
-    ##   ID         M                time                    geometry
-    ## 1  1 0.1846289 2023-08-24 14:23:30   POINT (65.07245 37.86887)
-    ## 2  1 0.5507702 2023-08-24 14:23:00  POINT (-22.80037 10.59739)
-    ## 3  2 0.1158738 2023-08-24 14:23:15 POINT (-169.6478 -45.67478)
-    ## 4  2 0.5608084 2023-08-24 14:23:00  POINT (-131.136 -88.97919)
+    ##   ID          M                time                    geometry
+    ## 1  1 0.06589864 2023-08-24 21:10:46  POINT (150.4892 -89.10837)
+    ## 2  1 0.12450582 2023-08-24 21:10:16  POINT (136.6234 -29.21446)
+    ## 3  2 0.84957660 2023-08-24 21:10:31   POINT (61.66158 40.74365)
+    ## 4  2 0.79735458 2023-08-24 21:10:16 POINT (-120.0236 -2.308449)
 
 To accommodate such irregular time series as the one above, we use `sf`
 as the digital representation for such objects. If your data varies over

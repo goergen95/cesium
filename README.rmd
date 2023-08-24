@@ -15,8 +15,22 @@ You can install the development version of `cesium` from GitHub with:
 remotes::install_github("goergen95/cesium")
 ```
 
+## Usecases
+
 Visit the [usecases](https://github.com/goergen95/cesium/tree/main/usecases) directory on 
 GitHub to explore applications of the `cesium` package.
+
+### NOAA - Arctic Sea Ice Extent 2000 - 2022
+
+![Animation of arctic sea ice extent](./usecases/assets/arctic-sea-ice.gif)
+
+### Global Forest Watch - Deforestation in Rondonia, Brazil 2000 - 2020
+
+![Animation of forest loss in Rondonia, Brazil](./usecases/assets/rondonia-deforestation.gif)
+
+### NASA FIRMS - Fires in Serengeti National Park, Tanzania 2010 - 2020
+
+![Animation of fire detections in the Serengeti National Park, Tanzania](./usecases/assets/serengeti-fires.gif)
 
 ## Disclaimer
 
