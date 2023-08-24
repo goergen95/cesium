@@ -1,7 +1,14 @@
-dispatch <- function(globe,
-                     funcName,
-                     cesium = stop(paste(funcName, "requires a globe proxy object")),
-                     cesium_proxy = stop(paste(funcName, "does not support globe proxy objects"))
+# adopted from https://github.com/rstudio/leaflet/blob/main/R/utils.R
+# Distributed under GPL-3 (GNU GENERAL PUBLIC
+# LICENSE version 3).
+
+meta_data <- function(obj) return(obj)
+
+dispatch <- function(
+    globe,
+    func_name,
+    cesium = stop(paste(func_name, "requires a globe proxy object")),
+    cesium_proxy = stop(paste(func_name, "does not support globe proxy objects"))
 ) {
   if (inherits(globe, "cesium"))
     return(cesium)
@@ -13,7 +20,7 @@ dispatch <- function(globe,
 
 
 
-invokeMethod <- function(globe, data, method, ...) {
+invoke_method <- function(globe, data, method, ...) {
   if (crosstalk::is.SharedData(data)) {
     globe$dependencies <- c(globe$dependencies, crosstalk::crosstalkLibs())
     data <- data$data()
@@ -21,7 +28,7 @@ invokeMethod <- function(globe, data, method, ...) {
     NULL
   }
 
-  args <- leaflet::evalFormula(list(...), data)
+  args <- eval_formula(list(...), data)
 
   dispatch(globe,
            method,
@@ -34,25 +41,25 @@ invokeMethod <- function(globe, data, method, ...) {
              globe
            },
            cesium_proxy = {
-             invokeRemote(globe, method, args)
+             invoke_remote(globe, method, args)
              globe
            }
   )
 }
 
 
-cesiumProxy <- function(globeId, session = shiny::getDefaultReactiveDomain(),
+cesium_proxy <- function(globe_id, session = shiny::getDefaultReactiveDomain(),
                          data = NULL, deferUntilFlush = TRUE) {
 
   if (is.null(session)) {
-    stop("cesiumProxy must be called from the server function of a Shiny app")
+    stop("cesium_proxy must be called from the server function of a Shiny app")
   }
 
   # If this is a new enough version of Shiny that it supports modules, and
-  # we're in a module (nzchar(session$ns(NULL))), and the globeId doesn't begin
+  # we're in a module (nzchar(session$ns(NULL))), and the globe_id doesn't begin
   # with the current namespace, then add the namespace.
   #
-  # We could also have unconditionally done `globeId <- session$ns(globeId)`, but
+  # We could also have unconditionally done `globe_id <- session$ns(globe_id)`, but
   # older versions of cesium would have broken unless the user did session$ns
   # themselves, and we hate to break their code unnecessarily.
   #
@@ -62,15 +69,15 @@ cesiumProxy <- function(globeId, session = shiny::getDefaultReactiveDomain(),
   if (
     !is.null(session$ns) &&
     nzchar(session$ns(NULL)) &&
-    substring(globeId, 1, nchar(session$ns(""))) != session$ns("")
+    substring(globe_id, 1, nchar(session$ns(""))) != session$ns("")
   ) {
-    globeId <- session$ns(globeId)
+    globe_id <- session$ns(globe_id)
   }
 
   structure(
     list(
       session = session,
-      id = globeId,
+      id = globe_id,
       x = structure(
         list(),
         cesiumData = data
@@ -87,19 +94,19 @@ cesiumProxy <- function(globeId, session = shiny::getDefaultReactiveDomain(),
 # than wait for this to be fixed in Shiny and released to CRAN,
 # work around this for older versions by maintaining our own
 # queue of work items. The names in this environment are session
-# tokens, and the values are lists of invokeRemote msg objects.
-# During the course of execution, cesiumProxy() should cause
+# tokens, and the values are lists of invoke_remote msg objects.
+# During the course of execution, cesium_proxy() should cause
 # deferred messages to be appended to the appropriate value in
-# sessionFlushQueue. It's the responsibility of invokeRemote to
-# ensure that the sessionFlushQueue values are properly reaped
+# session_flush_queue. It's the responsibility of invoke_remote to
+# ensure that the session_flush_queue values are properly reaped
 # as soon as possible, to prevent session objects from being
 # leaked.
 #
 # When Shiny >0.12.0 goes to CRAN, we should update our version
 # dependency and remove this entire mechanism.
-sessionFlushQueue <- new.env(parent = emptyenv())
+session_flush_queue <- new.env(parent = emptyenv())
 
-invokeRemote <- function(globe, method, args = list()) {
+invoke_remote <- function(globe, method, args = list()) {
   if (!inherits(globe, "cesium_proxy"))
     stop("Invalid globe parameter; globe proxy object was expected")
 
@@ -111,7 +118,8 @@ invokeRemote <- function(globe, method, args = list()) {
       list(
         dependencies = lapply(deps, shiny::createWebDependency),
         method = method,
-        args = args
+        args = args,
+        evals = htmlwidgets::JSEvals(args)
       )
     )
   )
@@ -120,33 +128,33 @@ invokeRemote <- function(globe, method, args = list()) {
   if (globe$deferUntilFlush) {
     if (packageVersion("shiny") < "0.12.1.9000") {
 
-      # See comment on sessionFlushQueue.
+      # See comment on session_flush_queue.
 
-      if (is.null(sessionFlushQueue[[sess$token]])) {
-        # If the current session doesn't have an entry in the sessionFlushQueue,
+      if (is.null(session_flush_queue[[sess$token]])) {
+        # If the current session doesn't have an entry in the session_flush_queue,
         # initialize it with a blank list.
-        sessionFlushQueue[[sess$token]] <- list()
+        session_flush_queue[[sess$token]] <- list()
 
         # If the session ends before the next onFlushed call, remove the entry
-        # for this session from the sessionFlushQueue.
+        # for this session from the session_flush_queue.
         endedUnreg <- sess$onSessionEnded(function() {
-          rm(list = sess$token, envir = sessionFlushQueue)
+          rm(list = sess$token, envir = session_flush_queue)
         })
 
         # On the next flush, pass all the messages to the client, and remove the
-        # entry from sessionFlushQueue.
+        # entry from session_flush_queue.
         sess$onFlushed(function() {
-          on.exit(rm(list = sess$token, envir = sessionFlushQueue), add = TRUE)
+          on.exit(rm(list = sess$token, envir = session_flush_queue), add = TRUE)
           endedUnreg()
-          for (msg in sessionFlushQueue[[sess$token]]) {
+          for (msg in session_flush_queue[[sess$token]]) {
             sess$sendCustomMessage("cesium-calls", msg)
           }
         }, once = TRUE) # nolint
       }
 
-      # Append the current value to the apporpriate sessionFlushQueue entry,
+      # Append the current value to the apporpriate session_flush_queue entry,
       # which is now guaranteed to exist.
-      sessionFlushQueue[[sess$token]] <- c(sessionFlushQueue[[sess$token]], list(msg))
+      session_flush_queue[[sess$token]] <- c(session_flush_queue[[sess$token]], list(msg))
 
     } else {
       sess$onFlushed(function() {
@@ -159,15 +167,31 @@ invokeRemote <- function(globe, method, args = list()) {
   globe
 }
 
-# A helper function to generate the body of function(x, y) list(x = x, y = y),
-# to save some typing efforts in writing tileOptions(), markerOptions(), ...
-makeListFun <- function(list) {
-  if (is.function(list)) list <- formals(list)
-  nms <- names(list)
-  cat(sprintf("list(%s)\n", paste(nms, nms, sep = " = ", collapse = ", ")))
-}
-
 "%||%" <- function(a, b) {
   if (!is.null(a)) a else b
 }
 
+#' Evaluate list members that are formulae, using the map data as the environment
+#' (if provided, otherwise the formula environment)
+#' @param list with members as formulae
+#' @param data map data
+#' @export
+eval_formula <- function(list, data) {
+  evalAll <- function(x) {
+    if (is.list(x)) {
+      # Use `x[] <-` so attributes on x are preserved
+      x[] <- lapply(x, evalAll)
+      x
+    } else {
+      resolve_formula(x, data)
+    }
+  }
+  evalAll(list)
+}
+
+resolve_formula <- function(f, data) {
+  if (!inherits(f, "formula")) return(f)
+  if (length(f) != 2L) stop("Unexpected two-sided formula: ", deparse(f))
+
+  eval(f[[2]], meta_data(data), environment(f))
+}
