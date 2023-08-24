@@ -13,7 +13,8 @@ You can install the development version of `cesium` from GitHub with:
 remotes::install_github("goergen95/cesium")
 ```
 
-Visit the [usecases](https://github.com/goergen95/cesium/usecases)
+Visit the
+[usecases](https://github.com/goergen95/cesium/tree/main/usecases)
 directory on GitHub to explore applications of the `cesium` package.
 
 ## Disclaimer
@@ -26,7 +27,7 @@ words, it needs your help! If you would like to be able to use
 within R, please consider contributing to the development of this
 package. You can report bugs, open feature-requests or contribute
 pull-requests to improve the documentation or the code base. We have a
-[Code-of-Conduct](https://github.com/goergen95/cesium/CODE_OF_CONDUCT.md)
+[Code-of-Conduct](https://github.com/goergen95/cesium/blob/main/CODE_OF_CONDUCT.md)
 governing the process of contributing to this repository. By
 participating in this project you agree to abide by its terms.
 
@@ -92,13 +93,13 @@ data <- data.frame(
     ## Simple feature collection with 4 features and 3 fields
     ## Geometry type: POINT
     ## Dimension:     XY
-    ## Bounding box:  xmin: -74.19608 ymin: -57.00216 xmax: 177.6889 ymax: 61.51698
+    ## Bounding box:  xmin: -169.6478 ymin: -88.97919 xmax: 65.07245 ymax: 37.86887
     ## Geodetic CRS:  WGS 84
-    ##   ID          M                time                    geometry
-    ## 1  1 0.89570841 2023-08-24 14:09:22   POINT (72.01588 61.51698)
-    ## 2  1 0.03185049 2023-08-24 14:08:52    POINT (65.22311 17.3282)
-    ## 3  2 0.15176581 2023-08-24 14:09:07  POINT (177.6889 -9.562527)
-    ## 4  2 0.79600447 2023-08-24 14:08:52 POINT (-74.19608 -57.00216)
+    ##   ID         M                time                    geometry
+    ## 1  1 0.1846289 2023-08-24 14:23:30   POINT (65.07245 37.86887)
+    ## 2  1 0.5507702 2023-08-24 14:23:00  POINT (-22.80037 10.59739)
+    ## 3  2 0.1158738 2023-08-24 14:23:15 POINT (-169.6478 -45.67478)
+    ## 4  2 0.5608084 2023-08-24 14:23:00  POINT (-131.136 -88.97919)
 
 To accommodate such irregular time series as the one above, we use `sf`
 as the digital representation for such objects. If your data varies over

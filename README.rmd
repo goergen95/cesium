@@ -15,7 +15,7 @@ You can install the development version of `cesium` from GitHub with:
 remotes::install_github("goergen95/cesium")
 ```
 
-Visit the [usecases](https://github.com/goergen95/cesium/usecases) directory on 
+Visit the [usecases](https://github.com/goergen95/cesium/tree/main/usecases) directory on 
 GitHub to explore applications of the `cesium` package.
 
 ## Disclaimer
@@ -27,7 +27,7 @@ your help! If you would like to be able to use [`CesiumJS`](https://cesium.com/p
 capabilities from within R, please consider contributing to the development of 
 this package. You can report bugs, open feature-requests or contribute 
 pull-requests to improve the documentation or the code base. We have a 
-[Code-of-Conduct](https://github.com/goergen95/cesium/CODE_OF_CONDUCT.md) 
+[Code-of-Conduct](https://github.com/goergen95/cesium/blob/main/CODE_OF_CONDUCT.md) 
 governing the process of contributing to this repository. By participating in 
 this project you agree to abide by its terms.
 
