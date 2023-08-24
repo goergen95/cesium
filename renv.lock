@@ -155,7 +155,7 @@
       "Package": "classInt",
       "Version": "0.4-9",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "bee651a42a89633eccb36dca9d9ab413",
       "Requirements": [
         "KernSmooth",
@@ -278,7 +278,7 @@
       "Package": "e1071",
       "Version": "1.7-13",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "1046cb48d06cb40c2900d8878f03a0fe",
       "Requirements": [
         "class",
@@ -552,7 +552,7 @@
       "Package": "lazyeval",
       "Version": "0.2.2",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "d908914ae53b04d4c0c0fd72ecc35370",
       "Requirements": []
     },
@@ -880,11 +880,11 @@
       "Package": "rnaturalearthhires",
       "Version": "0.2.1",
       "Source": "Repository",
-      "Repository": "https://ropensci.r-universe.dev",
+      "RemoteType": "repository",
       "RemoteUrl": "https://github.com/ropensci/rnaturalearthhires",
       "RemoteRef": "master",
       "RemoteSha": "c3785a8c44738de6ae8f797080c0a337ebed929d",
-      "Hash": "39390d437457f31c4231c4126cb868bb",
+      "Hash": "ab82498f4b5de56a6861691d46eeeee7",
       "Requirements": [
         "sp"
       ]
@@ -928,7 +928,7 @@
       "Package": "s2",
       "Version": "1.1.4",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "f1cbe03bb3346f8e817518ffa20f9f5a",
       "Requirements": [
         "Rcpp",
@@ -1264,7 +1264,7 @@
       "Package": "wk",
       "Version": "0.7.3",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Hash": "68a7ab6ec1afb5f076172b983c069313",
       "Requirements": []
     },
