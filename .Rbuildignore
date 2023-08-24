@@ -1,8 +1,11 @@
+^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^CODE_OF_CONDUCT.md$
 ^LICENSE.md$
 ^README.rmd$
 ^renv$
-^renv.lock$
 ^.github$
+^.RData$
+^.Rprofile$
+^usecases$
