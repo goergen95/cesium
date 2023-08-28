@@ -147,7 +147,7 @@ prep_packets <- function(
         entity_data[1,],
         height = heights[1])
 
-      n <- length(positions[[1]])
+      n <- length(positions[1])
 
       if (n == 1) {
 
@@ -169,7 +169,7 @@ prep_packets <- function(
         normalize_positions(entity_data[i, ],
                             height = heights[i]))
 
-      n <- length(positions[[1]])
+      n <- length(positions[1])
 
       if (n == 1) { # points and lines
 
