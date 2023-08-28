@@ -147,9 +147,9 @@ prep_packets <- function(
         entity_data[1,],
         height = heights[1])
 
-      n <- length(positions[1])
+      is_list <- is.list(positions[[1]])
 
-      if (n == 1) {
+      if (!is_list) {
 
       positions <- list(cartographicDegrees = positions)
 
@@ -169,9 +169,9 @@ prep_packets <- function(
         normalize_positions(entity_data[i, ],
                             height = heights[i]))
 
-      n <- length(positions[1])
+      is_list <- is.list(positions[[1]])
 
-      if (n == 1) { # points and lines
+      if (!is_list) { # points and lines
 
         if (is.null(entity_args$interpolation)) {
           positions <- set_interval(positions, timesteps, "cartographicDegrees")
@@ -183,7 +183,7 @@ prep_packets <- function(
 
       } else { # polygons, potentially with holes, positions are not interpolatable
 
-        positions <- sapply(1:n, function(i) {
+        positions <- sapply(1:length(positions[[1]]), function(i) {
           tmp <- lapply(positions, function(x) x[[i]])
           filterNULL(set_interval(tmp, timesteps, name = "cartographicDegrees"))
         }, simplify = FALSE, USE.NAMES = TRUE)
