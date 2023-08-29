@@ -147,9 +147,9 @@ prep_packets <- function(
         entity_data[1,],
         height = heights[1])
 
-      is_list <- is.list(positions[[1]])
+      is_list <- is.list(positions)
 
-      if (!is_list) {
+      if (!is_list) { # point and lines
 
       positions <- list(cartographicDegrees = positions)
 
