@@ -659,6 +659,7 @@ czml_label <- function(
       translucencyByDistance = translucency_by_distance,
       pixelOffsetScaleByDistance = pixel_offset_scale_by_distance,
       scaleByDistance =scale_by_distance,
+      distanceDisplayCondition = distance_display_condition,
       disableDeptTestDistance = disable_depth_test_distance))
 }
 
