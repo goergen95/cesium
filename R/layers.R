@@ -546,7 +546,6 @@ add_lines <- function(
     height = 0,
     popup = NULL,
     options = line_options(),
-    interpolation = interpolation_options(),
     data = getGlobeData(globe),
     ...) {
 
@@ -565,7 +564,6 @@ add_lines <- function(
       popup = popup
     ),
     options,
-    list(interpolation = interpolation),
     list(add_args = add_args)))
 
   packets <- prep_packets(
@@ -648,7 +646,6 @@ add_polygons <- function(
     arc_type = czml_arc_type(),
     popup = NULL,
     options = polygon_options(),
-    interpolation = interpolation_options(),
     data = getGlobeData(globe),
     ...) {
 
@@ -670,7 +667,6 @@ add_polygons <- function(
       popup = popup
     ),
     options,
-    list(interpolation = interpolation),
     list(add_args = add_args)))
 
   packets <- prep_packets(
