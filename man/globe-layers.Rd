@@ -79,7 +79,6 @@ add_lines(
   height = 0,
   popup = NULL,
   options = line_options(),
-  interpolation = interpolation_options(),
   data = getGlobeData(globe),
   ...
 )
@@ -100,7 +99,6 @@ add_polygons(
   arc_type = czml_arc_type(),
   popup = NULL,
   options = polygon_options(),
-  interpolation = interpolation_options(),
   data = getGlobeData(globe),
   ...
 )
