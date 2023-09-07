@@ -1,32 +1,66 @@
 # gets coordinates from sf objects
 normalize_positions <- function(obj, height = 0){
-  if (nrow(obj) > 1)
-    rlang::abort("expected to retrieve positions only for single entities")
 
-  geom_type <- as.character(st_geometry_type(obj))
+  geom_type <- unique(as.character(st_geometry_type(obj)))
+  if (length(geom_type) > 1)
+    rlang::abort("Expecing only single type geometries.")
+
   coords <- st_coordinates(obj)
+  coords <- unname(coords)
 
-  get_polygons <- function(x) {
-    n <- unique(x[ ,3])
-    rings <- lapply(n, function(i) {
-      index <- x[ ,3] == i
-      c(rbind(x[index,1], x[index,2], height))
-    })
-    exterior <- rings[[1]]
-    holes <- NULL
-    if(length(n) > 1) holes <- rings[2:length(rings)]
-    return(list(exterior = exterior, holes = holes))
+  if (geom_type == "POINT"){
+
+    return(unname(cbind(coords, height)))
+
+  } else if (geom_type == "LINESTRING") {
+
+    n_features <- unique(coords[ ,3])
+    if (length(height) == 1)
+      height <- rep(height, length(n_features))
+
+    return(
+      lapply(n_features,
+             function(i){
+               cbind(coords[coords[ ,3] == i, 1:2], height[i])
+             })
+    )
+
+  } else {
+
+    n_features <- unique(coords[ ,4])
+    if (length(height) == 1)
+      height <- rep(height, length(n_features))
+
+    return(
+      lapply(n_features, function(i) {
+        tmp <- coords[coords[ ,4] == i, ]
+        lapply(unique(tmp[ ,3]), function(j){
+          cbind(tmp[tmp[ ,3] == j, 1:2], height[i])
+        })
+      })
+    )
   }
+}
 
-  switch(
-    geom_type,
-    "POINT" = c(rbind(coords[1], coords[2], height)),
-    "LINESTRING" = c(rbind(coords[ ,1], coords[ ,2], height)),
-    "POLYGON" = get_polygons(coords),
-    rlang::abort(
-      paste("normalize_positions() not implemented for geometries of type",
-            geom_type))
-  )
+get_time_info <- function(timesteps) {
+
+  availability <- c(
+    min(timesteps, na.rm = TRUE),
+    max(timesteps, na.rm = TRUE))
+
+  availability <- paste(
+    format(availability, .pkgenv$time_format),
+    sep = "", collapse = "/")
+
+  epoch <- format(
+    timesteps[1] - as.numeric(timesteps[1]),
+    .pkgenv$time_format)
+
+  list(
+    availability = availability,
+    epoch = epoch,
+    timesteps=timesteps)
+
 }
 
 # representation of a packet
@@ -117,27 +151,19 @@ prep_packets <- function(
 
     entity_data <- data$entities[[e]]
     availability <- NULL
+    epoch <- NULL
     timesteps <- NULL
 
     entity_args <- eval_formula(args, entity_data)
     heights <- entity_args$height
     entity <- do.call(packet_fun, entity_args)
+    do_interpolate <- !is.null(entity_args$interpolation)
 
     if (!is.null(time_var)) {
 
-      timesteps <- entity_data[[time_var]]
-
-      availability <- c(
-        min(timesteps, na.rm = TRUE),
-        max(timesteps, na.rm = TRUE))
-
-      availability <- paste(
-        format(availability, .pkgenv$time_format),
-        sep = "", collapse = "/")
-
-      entity_data <- entity_data[order(timesteps), ]
-      timesteps <- timesteps[order(timesteps)]
-      timesteps <- format(timesteps, .pkgenv$time_format)
+      tinfo <- get_time_info(entity_data[[time_var]])
+      entity_data <- entity_data[order(tinfo$timesteps), ]
+      tinfo$timesteps <- tinfo$timesteps[order(tinfo$timesteps)]
 
     }
 
@@ -147,51 +173,82 @@ prep_packets <- function(
         entity_data[1,],
         height = heights[1])
 
-      is_list <- is.list(positions)
+    } else {
 
-      if (!is_list) { # point and lines
+      positions <- normalize_positions(
+        entity_data,
+        height = heights)
 
-      positions <- list(cartographicDegrees = positions)
+    }
+
+    is_point <- !is.list(positions)
+    is_polyline <- !is_point & !is.list(positions[[1]])
+
+    if (is_point) {
+
+      if (constant_space) {
+
+        positions <- list(cartographicDegrees = as.vector(t(positions)))
 
       } else {
 
-        positions <- lapply(positions, function(x) {
-            filterNULL(list(cartographicDegrees = x))})
-      }
+        positions <- lapply(seq_len(nrow(positions)), function(i) positions[i, ]) # to list
 
-    } else {
+        if (do_interpolate) {
 
-      if (length(heights) != nrow(entity_data))
-        heights <- rep(heights, nrow(entity_data))
+          positions <- set_temporal_property(positions, tinfo$timesteps)
+          positions <- c(entity_args$interpolation, cartographicDegrees =  list(positions))
 
-      positions <- lapply(
-        seq_len(nrow(entity_data)), \(i)
-        normalize_positions(entity_data[i, ],
-                            height = heights[i]))
+        } else { # interval
 
-      is_list <- is.list(positions[[1]])
+          positions <- set_interval(positions, tinfo$timesteps, name = "cartographicDegrees")
 
-      if (!is_list) { # points and lines
-
-        if (is.null(entity_args$interpolation)) {
-          positions <- set_interval(positions, timesteps, "cartographicDegrees")
-        } else {
-          positions <- set_temporal_property(positions, timesteps)
-          positions <- list(cartographicDegrees = positions)
-          positions <- c(entity_args$interpolation, positions)
         }
 
-      } else { # polygons, potentially with holes, positions are not interpolatable
+      }
 
-        positions <- sapply(1:length(positions[[1]]), function(i) {
-          tmp <- lapply(positions, function(x) x[[i]])
-          filterNULL(set_interval(tmp, timesteps, name = "cartographicDegrees"))
-        }, simplify = FALSE, USE.NAMES = TRUE)
-        names(positions) <- c("exterior", "holes")
+    } else { # polygons and polylines
+
+      if (constant_space) {
+
+        if (is_polyline) { # polyline
+
+          positions <- list(cartographicDegrees = as.vector(t(positions[[1]])))
+
+        } else { # polygon
+
+          positions <- lapply(positions[[1]], function(x) list(cartographicDegrees = as.vector(t(x))))
+          positions <- list(exterior = positions[[1]], holes = filterNULL(positions[-1]))
+
+        }
+
+      } else { # time dynamic polygons and polylines are not interpolatable
+
+        if (is_polyline) { # polyline
+
+          positions <- lapply(positions, function(x) as.vector(t(x)))
+          positions <- set_interval(positions, tinfo$timesteps, name = "cartographicDegrees")
+
+        } else {
+
+          positions <- lapply(positions, function(poly){
+            exterior <- as.vector(t(poly[[1]]))
+            holes <- poly[-1]
+            holes <- lapply(holes, function(x) as.vector(t(x)))
+            list(exterior=exterior, holes=holes)
+          })
+
+          exteriors <- lapply(positions, function(x) x$exterior)
+          exteriors <- set_interval(exteriors, tinfo$timesteps, name = "cartographicDegrees")
+          holes <- lapply(positions, function(x) x$holes)
+          holes <- set_interval(holes, tinfo$timesteps, name = "cartographicDegrees")
+          positions <- list(exterior = exteriors, holes = filterNULL(holes))
+
+        }
       }
     }
 
-    if (!packet_name %in% c("polyline", "polygon")) {
+    if (is_point) {
 
       packet <- czml_packet(id = paste0(layer_id, "-", e),
                             name = unique_ids[e],
@@ -212,16 +269,12 @@ prep_packets <- function(
                             show = entity_args$show)
       packet <- append(packet, entity_args$add_args)
 
-      if (packet_name != "polygon") {
-
+      if (is_polyline) {
         entity$positions <- positions
-
       } else {
-
         entity$positions <- positions$exterior
         if (length(positions$holes) > 0)
           entity$holes <- positions$holes
-
       }
 
       packet[[packet_name]] <- entity
@@ -230,7 +283,6 @@ prep_packets <- function(
     if (progress) {
       if (e %% factor == 0) p()
     }
-    packet
   })
   packets
 }
