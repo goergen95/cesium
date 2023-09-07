@@ -150,9 +150,7 @@ prep_packets <- function(
   packets <- lapply(seq_along(unique_ids), function(e) {
 
     entity_data <- data$entities[[e]]
-    availability <- NULL
-    epoch <- NULL
-    timesteps <- NULL
+    tinfo <- NULL
 
     entity_args <- eval_formula(args, entity_data)
     heights <- entity_args$height
@@ -184,13 +182,26 @@ prep_packets <- function(
     is_point <- !is.list(positions)
     is_polyline <- !is_point & !is.list(positions[[1]])
 
-    if (is_point) {
+    if (constant_space) {
 
-      if (constant_space) {
+      if (is_point) {
 
         positions <- list(cartographicDegrees = as.vector(t(positions)))
 
-      } else {
+      } else if (is_polyline) {
+
+        positions <- list(cartographicDegrees = as.vector(t(positions[[1]])))
+
+      } else { # polygon
+
+        positions <- lapply(positions[[1]], function(x) list(cartographicDegrees = as.vector(t(x))))
+        positions <- list(exterior = positions[[1]], holes = filterNULL(positions[-1]))
+
+      }
+
+    } else {
+
+      if (is_point) {
 
         positions <- lapply(seq_len(nrow(positions)), function(i) positions[i, ]) # to list
 
@@ -205,47 +216,28 @@ prep_packets <- function(
 
         }
 
+      } else if (is_polyline) { # polygons and polylines are not interpolatable
+
+        positions <- lapply(positions, function(x) as.vector(t(x)))
+        positions <- set_interval(positions, tinfo$timesteps, name = "cartographicDegrees")
+
+      } else { # polygon
+
+        positions <- lapply(positions, function(poly){
+          exterior <- as.vector(t(poly[[1]]))
+          holes <- poly[-1]
+          holes <- lapply(holes, function(x) as.vector(t(x)))
+          list(exterior=exterior, holes=holes)
+        })
+
+        exteriors <- lapply(positions, function(x) x$exterior)
+        exteriors <- set_interval(exteriors, tinfo$timesteps, name = "cartographicDegrees")
+        holes <- lapply(positions, function(x) x$holes)
+        holes <- set_interval(holes, tinfo$timesteps, name = "cartographicDegrees")
+        positions <- list(exterior = exteriors, holes = filterNULL(holes))
+
       }
 
-    } else { # polygons and polylines
-
-      if (constant_space) {
-
-        if (is_polyline) { # polyline
-
-          positions <- list(cartographicDegrees = as.vector(t(positions[[1]])))
-
-        } else { # polygon
-
-          positions <- lapply(positions[[1]], function(x) list(cartographicDegrees = as.vector(t(x))))
-          positions <- list(exterior = positions[[1]], holes = filterNULL(positions[-1]))
-
-        }
-
-      } else { # time dynamic polygons and polylines are not interpolatable
-
-        if (is_polyline) { # polyline
-
-          positions <- lapply(positions, function(x) as.vector(t(x)))
-          positions <- set_interval(positions, tinfo$timesteps, name = "cartographicDegrees")
-
-        } else {
-
-          positions <- lapply(positions, function(poly){
-            exterior <- as.vector(t(poly[[1]]))
-            holes <- poly[-1]
-            holes <- lapply(holes, function(x) as.vector(t(x)))
-            list(exterior=exterior, holes=holes)
-          })
-
-          exteriors <- lapply(positions, function(x) x$exterior)
-          exteriors <- set_interval(exteriors, tinfo$timesteps, name = "cartographicDegrees")
-          holes <- lapply(positions, function(x) x$holes)
-          holes <- set_interval(holes, tinfo$timesteps, name = "cartographicDegrees")
-          positions <- list(exterior = exteriors, holes = filterNULL(holes))
-
-        }
-      }
     }
 
     if (is_point) {
@@ -253,7 +245,7 @@ prep_packets <- function(
       packet <- czml_packet(id = paste0(layer_id, "-", e),
                             name = unique_ids[e],
                             description = entity_args$popup,
-                            availability = availability,
+                            availability = tinfo[["availability"]],
                             position = positions,
                             path = entity_args$path,
                             show = entity_args$show)
@@ -265,24 +257,31 @@ prep_packets <- function(
       packet <- czml_packet(id = paste0(layer_id, "-", e),
                             name = unique_ids[e],
                             description = entity_args$popup,
-                            availability = availability,
+                            availability = tinfo[["availability"]],
                             show = entity_args$show)
       packet <- append(packet, entity_args$add_args)
 
       if (is_polyline) {
+
         entity$positions <- positions
+
       } else {
+
         entity$positions <- positions$exterior
         if (length(positions$holes) > 0)
           entity$holes <- positions$holes
+
       }
 
       packet[[packet_name]] <- entity
+
     }
 
-    if (progress) {
+    if (progress)
       if (e %% factor == 0) p()
-    }
+
+    packet
+
   })
   packets
 }
