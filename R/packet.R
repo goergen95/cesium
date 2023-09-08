@@ -42,6 +42,107 @@ normalize_positions <- function(obj, height = 0){
   }
 }
 
+
+constant_positions <- function(
+    positions,
+    is_point,
+    is_polyline) {
+
+  if (is_point) {
+
+    positions <- list(cartographicDegrees = as.vector(t(positions)))
+
+  } else if (is_polyline) {
+
+    positions <- list(cartographicDegrees = as.vector(t(positions[[1]])))
+
+  } else { # polygon
+
+    positions <- lapply(positions[[1]], function(x) list(cartographicDegrees = as.vector(t(x))))
+    positions <- list(exterior = positions[[1]], holes = filterNULL(positions[-1]))
+
+  }
+  positions
+}
+
+
+dynamic_positions <- function(
+    positions,
+    is_point,
+    is_polyline,
+    tinfo,
+    interpolate) {
+
+  if (is_point) {
+
+    positions <- lapply(seq_len(nrow(positions)), function(i) positions[i, ]) # to list
+
+    if (!is.null(interpolate)) {
+
+      positions <- set_temporal_property(positions, tinfo[["timesteps"]])
+      positions <- c(interpolate, cartographicDegrees =  list(positions))
+
+    } else { # interval
+
+      positions <- set_interval(positions, tinfo[["timesteps"]], name = "cartographicDegrees")
+
+    }
+
+  } else if (is_polyline) { # polygons and polylines are not interpolatable
+
+    positions <- lapply(positions, function(x) as.vector(t(x)))
+    positions <- set_interval(positions, tinfo[["timesteps"]], name = "cartographicDegrees")
+
+  } else { # polygon
+
+    positions <- lapply(positions, function(poly){
+      exterior <- as.vector(t(poly[[1]]))
+      holes <- poly[-1]
+      holes <- lapply(holes, function(x) as.vector(t(x)))
+      list(exterior=exterior, holes=holes)
+    })
+
+    exteriors <- lapply(positions, function(x) x[["exterior"]])
+    exteriors <- set_interval(exteriors, tinfo[["timesteps"]], name = "cartographicDegrees")
+    holes <- lapply(positions, function(x) x[["holes"]])
+    holes <- set_interval(holes, tinfo[["timesteps"]], name = "cartographicDegrees")
+    positions <- list(exterior = exteriors, holes = filterNULL(holes))
+
+  }
+
+  positions
+
+}
+
+get_positions <- function(
+    positions,
+    is_point,
+    is_polyline,
+    constant_space,
+    tinfo,
+    interpolate) {
+
+  if (constant_space) {
+
+    positions <- constant_positions(
+      positions,
+      is_point,
+      is_polyline)
+
+  } else {
+
+    positions <-  dynamic_positions(
+      positions,
+      is_point,
+      is_polyline,
+      tinfo,
+      interpolate)
+
+  }
+
+  positions
+}
+
 get_time_info <- function(timesteps) {
 
   availability <- c(
@@ -61,6 +162,14 @@ get_time_info <- function(timesteps) {
     epoch = epoch,
     timesteps=timesteps)
 
+}
+
+set_progress <- function(n){
+  if(!requireNamespace("progressr", quietly = TRUE))
+    rlang::abort("please run 'install.packages('progressr')' if you want to use a progress bar.")
+  factor <- 1
+  if(n > 100) factor <- round(n * 0.01)
+  progressr::progressor(length(unique_ids) / factor)
 }
 
 # representation of a packet
@@ -136,34 +245,29 @@ prep_packets <- function(
     packet_name,
     progress = FALSE) {
 
-  unique_ids <- unique(data[[id_var]])
+  unique_ids <- data[[id_var]]
 
   if (progress) {
-    if(!requireNamespace("progressr", quietly = TRUE))
-      rlang::abort("please run 'install.packages('progressr')' if you want to use a progress bar.")
-    factor <- 1
-    n <- length(unique_ids)
-    if(n > 100) factor <- round(n * 0.01)
-    p <- progressr::progressor(length(unique_ids) / factor)
+    p <- set_progress(length(unique_ids))
   }
 
   packets <- lapply(seq_along(unique_ids), function(e) {
 
-    entity_data <- data$entities[[e]]
+    entity_data <- data[["entities"]][[e]]
     tinfo <- NULL
-
-    entity_args <- eval_formula(args, entity_data)
-    heights <- entity_args$height
-    entity <- do.call(packet_fun, entity_args)
-    do_interpolate <- !is.null(entity_args$interpolation)
 
     if (!is.null(time_var)) {
 
       tinfo <- get_time_info(entity_data[[time_var]])
-      entity_data <- entity_data[order(tinfo$timesteps), ]
-      tinfo$timesteps <- tinfo$timesteps[order(tinfo$timesteps)]
+      entity_data <- entity_data[order(tinfo[["timesteps"]]), ]
+      tinfo[["timesteps"]] <- tinfo[["timesteps"]][order(tinfo[["timesteps"]])]
 
     }
+
+    entity_args <- eval_formula(args, entity_data)
+    heights <- entity_args[["height"]]
+    interpolate <- entity_args[["interpolation"]]
+    entity <- do.call(packet_fun, entity_args)
 
     if (constant_space) {
 
@@ -182,94 +286,44 @@ prep_packets <- function(
     is_point <- !is.list(positions)
     is_polyline <- !is_point & !is.list(positions[[1]])
 
-    if (constant_space) {
-
-      if (is_point) {
-
-        positions <- list(cartographicDegrees = as.vector(t(positions)))
-
-      } else if (is_polyline) {
-
-        positions <- list(cartographicDegrees = as.vector(t(positions[[1]])))
-
-      } else { # polygon
-
-        positions <- lapply(positions[[1]], function(x) list(cartographicDegrees = as.vector(t(x))))
-        positions <- list(exterior = positions[[1]], holes = filterNULL(positions[-1]))
-
-      }
-
-    } else {
-
-      if (is_point) {
-
-        positions <- lapply(seq_len(nrow(positions)), function(i) positions[i, ]) # to list
-
-        if (do_interpolate) {
-
-          positions <- set_temporal_property(positions, tinfo$timesteps)
-          positions <- c(entity_args$interpolation, cartographicDegrees =  list(positions))
-
-        } else { # interval
-
-          positions <- set_interval(positions, tinfo$timesteps, name = "cartographicDegrees")
-
-        }
-
-      } else if (is_polyline) { # polygons and polylines are not interpolatable
-
-        positions <- lapply(positions, function(x) as.vector(t(x)))
-        positions <- set_interval(positions, tinfo$timesteps, name = "cartographicDegrees")
-
-      } else { # polygon
-
-        positions <- lapply(positions, function(poly){
-          exterior <- as.vector(t(poly[[1]]))
-          holes <- poly[-1]
-          holes <- lapply(holes, function(x) as.vector(t(x)))
-          list(exterior=exterior, holes=holes)
-        })
-
-        exteriors <- lapply(positions, function(x) x$exterior)
-        exteriors <- set_interval(exteriors, tinfo$timesteps, name = "cartographicDegrees")
-        holes <- lapply(positions, function(x) x$holes)
-        holes <- set_interval(holes, tinfo$timesteps, name = "cartographicDegrees")
-        positions <- list(exterior = exteriors, holes = filterNULL(holes))
-
-      }
-
-    }
+    positions <- get_positions(
+      positions,
+      is_point,
+      is_polyline,
+      constant_space,
+      tinfo,
+      interpolate)
 
     if (is_point) {
 
       packet <- czml_packet(id = paste0(layer_id, "-", e),
                             name = unique_ids[e],
-                            description = entity_args$popup,
+                            description = entity_args[["popup"]],
                             availability = tinfo[["availability"]],
                             position = positions,
-                            path = entity_args$path,
-                            show = entity_args$show)
-      packet <- append(packet, entity_args$add_args)
+                            path = entity_args[["path"]],
+                            show = entity_args[["show"]])
+      packet <- append(packet, entity_args[["add_args"]])
       packet[[packet_name]] <- entity
 
     } else {
 
       packet <- czml_packet(id = paste0(layer_id, "-", e),
                             name = unique_ids[e],
-                            description = entity_args$popup,
+                            description = entity_args[["popup"]],
                             availability = tinfo[["availability"]],
-                            show = entity_args$show)
-      packet <- append(packet, entity_args$add_args)
+                            show = entity_args[["show"]])
+      packet <- append(packet, entity_args[["add_args"]])
 
       if (is_polyline) {
 
-        entity$positions <- positions
+        entity[["positions"]] <- positions
 
       } else {
 
-        entity$positions <- positions$exterior
-        if (length(positions$holes) > 0)
-          entity$holes <- positions$holes
+        entity[["positions"]] <- positions[["exterior"]]
+        if (length(positions[["holes"]]) > 0)
+          entity[["holes"]] <- positions[["holes"]]
 
       }
 
