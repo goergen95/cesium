@@ -32,6 +32,10 @@ GitHub to explore applications of the `cesium` package.
 
 ![Animation of fire detections in the Serengeti National Park, Tanzania](./usecases/assets/serengeti-fires.gif)
 
+### NOAA - Atlantic hurricanes 2004 - 2021 timelapse
+
+![Animation of atlantic hurricanes from the NOAA database 2004 - 2021](./usecases/assets/hurricanes.gif)
+
 ## Disclaimer
 
 This package is highly experimental, very far from being feature-equal 

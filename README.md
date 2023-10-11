@@ -46,6 +46,15 @@ alt="Animation of fire detections in the Serengeti National Park, Tanzania" />
 Serengeti National Park, Tanzania</figcaption>
 </figure>
 
+### NOAA - Atlantic hurricanes 2004 - 2021 timelapse
+
+<figure>
+<img src="./usecases/assets/hurricanes.gif"
+alt="Animation of atlantic hurricanes from the NOAA database 2004 - 2021" />
+<figcaption aria-hidden="true">Animation of atlantic hurricanes from the
+NOAA database 2004 - 2021</figcaption>
+</figure>
+
 ## Disclaimer
 
 This package is highly experimental, very far from being feature-equal
@@ -106,7 +115,7 @@ irregularly over time.
 library(sf)
 ```
 
-    ## Linking to GEOS 3.11.1, GDAL 3.6.4, PROJ 9.1.1; sf_use_s2() is TRUE
+    ## Linking to GEOS 3.10.2, GDAL 3.4.1, PROJ 8.2.1; sf_use_s2() is TRUE
 
 ``` r
 data <- data.frame(
@@ -122,13 +131,13 @@ data <- data.frame(
     ## Simple feature collection with 4 features and 3 fields
     ## Geometry type: POINT
     ## Dimension:     XY
-    ## Bounding box:  xmin: -120.0236 ymin: -89.10837 xmax: 150.4892 ymax: 40.74365
+    ## Bounding box:  xmin: -89.42126 ymin: -55.35812 xmax: 31.43983 ymax: 72.71347
     ## Geodetic CRS:  WGS 84
-    ##   ID          M                time                    geometry
-    ## 1  1 0.06589864 2023-08-24 21:10:46  POINT (150.4892 -89.10837)
-    ## 2  1 0.12450582 2023-08-24 21:10:16  POINT (136.6234 -29.21446)
-    ## 3  2 0.84957660 2023-08-24 21:10:31   POINT (61.66158 40.74365)
-    ## 4  2 0.79735458 2023-08-24 21:10:16 POINT (-120.0236 -2.308449)
+    ##   ID         M                time                    geometry
+    ## 1  1 0.8582765 2023-10-11 19:28:49   POINT (19.19777 39.66742)
+    ## 2  1 0.7900004 2023-10-11 19:28:19   POINT (25.57935 72.71347)
+    ## 3  2 0.1460654 2023-10-11 19:28:34   POINT (31.43983 5.546985)
+    ## 4  2 0.5349906 2023-10-11 19:28:19 POINT (-89.42126 -55.35812)
 
 To accommodate such irregular time series as the one above, we use `sf`
 as the digital representation for such objects. If your data varies over
